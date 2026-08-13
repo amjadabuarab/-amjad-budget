@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#0b1220">
+<title>Amjad Budget Pro</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#101828;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif}
+.app{max-width:760px;margin:auto;padding-bottom:90px}.hero{background:#0b1220;color:white;padding:26px 20px 22px;border-radius:0 0 30px 30px}
+.hero h1{font-size:30px;margin:0}.hero p{margin:6px 0 0;color:#aab4c5;font-size:14px}
+.tabs{display:flex;gap:8px;padding:14px 16px 4px}.tabs button{flex:1;border:0;border-radius:13px;padding:12px;font-weight:700;background:#e5e9f0;color:#344054}.tabs .on{background:#0b1220;color:white}
+.page{padding:10px 16px}.card{background:#fff;border-radius:20px;padding:17px;margin:0 0 14px;box-shadow:0 5px 18px #1018280d}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#f7f8fb;border-radius:16px;padding:14px}.label{font-size:12px;color:#667085}.value{font-size:23px;font-weight:800;margin-top:3px}
+.progress{height:9px;background:#e9edf2;border-radius:9px;overflow:hidden;margin-top:8px}.fill{height:100%;background:#111827;border-radius:9px}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center}.muted{color:#667085;font-size:13px}.good{color:#087443;font-weight:700}.bad{color:#b42318;font-weight:700}
+button{font:inherit}.primary{width:100%;border:0;border-radius:15px;background:#0b1220;color:#fff;padding:14px;font-weight:800}.secondary{border:0;background:#eef1f5;border-radius:12px;padding:9px 12px;font-weight:700}
+input,select{width:100%;border:1px solid #d0d5dd;border-radius:13px;padding:13px;font-size:16px;margin:6px 0 12px;background:white}
+.item{padding:12px 0;border-bottom:1px solid #edf0f4}.item:last-child{border-bottom:0}
+.small{font-size:12px;color:#667085}.hidden{display:none}
+canvas{width:100%;height:190px;background:#fafbfc;border-radius:14px}
+.fab{position:fixed;right:20px;bottom:20px;border:0;border-radius:50%;width:58px;height:58px;background:#0b1220;color:#fff;font-size:28px;box-shadow:0 8px 25px #0003}
+.toast{position:fixed;left:20px;right:20px;bottom:88px;background:#101828;color:#fff;padding:13px;border-radius:14px;text-align:center;display:none}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="hero"><h1>Amjad Budget</h1><p>$1,775 weekly income · Every dollar has a job</p></header>
+
+<div class="tabs">
+<button id="b1" class="on" onclick="tab('home')">Dashboard</button>
+<button id="b2" onclick="tab('reports')">Reports</button>
+<button id="b3" onclick="tab('settings')">Settings</button>
+</div>
+
+<main id="home" class="page">
+<div class="card">
+<div class="row"><div><div class="label">Weekly income</div><div class="value">$1,775</div></div><div style="text-align:right"><div class="label">Weekly saving</div><div class="value">$292.31</div></div></div>
+</div>
+
+<div class="card">
+<div class="row"><b>This week</b><span id="weekRemaining" class="good"></span></div>
+<div class="grid" style="margin-top:10px">
+<div class="metric"><div class="label">Spent</div><div id="weekSpent" class="value">$0</div></div>
+<div class="metric"><div class="label">Savings target</div><div class="value">$292.31</div></div>
+</div>
+</div>
+
+<div class="card">
+<div class="row"><b>Budget status</b><span class="muted">$7,325/month</span></div>
+<div id="budget"></div>
+</div>
+
+<div class="card">
+<div class="row"><b>Recent expenses</b><button class="secondary" onclick="tab('add')">+ Add</button></div>
+<div id="recent"></div>
+</div>
+</main>
+
+<main id="reports" class="page hidden">
+<div class="card"><div class="row"><b>Spending by category</b><span class="muted">Current month</span></div><canvas id="chart" width="700" height="300"></canvas></div>
+<div class="card"><b>Monthly plan</b><div id="reportTotals" style="margin-top:10px"></div></div>
+</main>
+
+<main id="settings" class="page hidden">
+<div class="card">
+<h3 style="margin-top:0">Add expense</h3>
+<label class="muted">Category</label><select id="category"></select>
+<label class="muted">Amount</label><input id="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00">
+<label class="muted">Description</label><input id="description" placeholder="e.g. Walmart groceries">
+<button class="primary" onclick="addExpense()">Save expense</button>
+</div>
+<div class="card">
+<b>Current plan</b>
+<div class="item">Income <strong>$1,775/week</strong></div>
+<div class="item">Saving <strong>$1,266.67/month</strong></div>
+<div class="item">Groceries & Shopping <strong>$2,000/month</strong></div>
+<div class="item">Separate buffer <strong>$0</strong></div>
+<button class="secondary" style="margin-top:12px" onclick="clearAll()">Delete all expense records</button>
+</div>
+</main>
+</div>
+<button class="fab" onclick="tab('settings')">+</button>
+<div id="toast" class="toast"></div>
+
+<script>
+const budget={
+"Apartment rent":2175,"Electricity":100,"Phone + Internet":185,"Car insurance":165,"Car payment":500,
+"Gas":100,"Tickets & Vacation":650,"Car maintenance":200,"Ala phone":60,"Mama":70,"Charity":100,
+"Saving":1266.6667,"Dana Academy":120,"Groceries & Shopping":2000};
+const weekly={"Apartment rent":501.92,"Electricity":23.08,"Phone + Internet":42.69,"Car insurance":38.08,"Car payment":115.38,
+"Gas":23.08,"Tickets & Vacation":150,"Car maintenance":46.15,"Ala phone":13.85,"Mama":16.15,"Charity":23.08,
+"Saving":292.31,"Dana Academy":27.69,"Groceries & Shopping":461.54};
+const cats=Object.keys(budget);
+const sel=document.getElementById('category');
+cats.forEach(c=>sel.add(new Option(c,c)));
+const money=n=>'$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+function expenses(){return JSON.parse(localStorage.getItem('amjadBudgetExpenses')||'[]')}
+function save(x){localStorage.setItem('amjadBudgetExpenses',JSON.stringify(x))}
+function monthKey(d){let x=new Date(d);return x.getFullYear()+'-'+x.getMonth()}
+function startWeek(){let d=new Date();d.setHours(0,0,0,0);let day=d.getDay();d.setDate(d.getDate()-(day===0?6:day-1));return d}
+function tab(t){
+['home','reports','settings'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==t));
+['b1','b2','b3'].forEach((id,i)=>document.getElementById(id).classList.toggle('on',['home','reports','settings'][i]===t));
+if(t==='reports') draw(); render();
+}
+function addExpense(){
+let a=Number(amount.value);if(!a||a<=0)return toast('Enter a valid amount.');
+let x=expenses();x.unshift({date:new Date().toISOString(),cat:sel.value,amount:a,desc:description.value||''});save(x);
+amount.value='';description.value='';toast('Expense saved');tab('home');
+}
+function render(){
+let x=expenses(), totals={};cats.forEach(c=>totals[c]=0);x.forEach(e=>{if(totals[e.cat]!=null)totals[e.cat]+=e.amount});
+document.getElementById('budget').innerHTML=cats.map(c=>{
+let rem=budget[c]-totals[c],pct=Math.min(100,totals[c]/budget[c]*100);
+return `<div class="item"><div class="row"><b>${c}</b><span class="${rem<0?'bad':'good'}">${money(rem)} left</span></div><div class="small">${money(totals[c])} of ${money(budget[c])}</div><div class="progress"><div class="fill" style="width:${pct}%"></div></div></div>`}).join('');
+let ws=startWeek(),spent=x.filter(e=>new Date(e.date)>=ws).reduce((s,e)=>s+e.amount,0);
+document.getElementById('weekSpent').textContent=money(spent);document.getElementById('weekRemaining').textContent=money(1775-spent)+' available';
+document.getElementById('recent').innerHTML=x.slice(0,8).map(e=>`<div class="item"><div class="row"><b>${e.cat}</b><b>-${money(e.amount)}</b></div><div class="muted">${new Date(e.date).toLocaleDateString()} ${e.desc}</div></div>`).join('')||'<div class="muted" style="padding-top:12px">No expenses recorded yet.</div>';
+}
+function draw(){
+let x=expenses(),tot={};cats.forEach(c=>tot[c]=0);x.forEach(e=>{if(monthKey(e.date)===monthKey(new Date())&&tot[e.cat]!=null)tot[e.cat]+=e.amount});
+let arr=Object.entries(tot).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,7);
+let cv=document.getElementById('chart'),ctx=cv.getContext('2d'),w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);
+let max=Math.max(...arr.map(a=>a[1]),1), bar=45, gap=20;
+arr.forEach((a,i)=>{let bh=a[1]/max*180,xp=20+i*(bar+gap),yp=h-30-bh;ctx.fillStyle='#111827';ctx.fillRect(xp,yp,bar,bh);ctx.fillStyle='#667085';ctx.font='12px Arial';ctx.save();ctx.translate(xp+bar/2,h-8);ctx.rotate(-.55);ctx.textAlign='right';ctx.fillText(a[0].slice(0,16),0,0);ctx.restore();ctx.fillText('$'+Math.round(a[1]),xp,yp-6)});
+let total=Object.values(tot).reduce((a,b)=>a+b,0);
+document.getElementById('reportTotals').innerHTML=`<div class="item">Spent this month <strong>${money(total)}</strong></div><div class="item">Planned expenses <strong>$7,325</strong></div><div class="item">Saving target <strong>$1,266.67</strong></div>`;
+}
+function clearAll(){if(confirm('Delete all expense records?')){localStorage.removeItem('amjadBudgetExpenses');render();draw();toast('Records deleted')}}
+function toast(t){let el=document.getElementById('toast');el.textContent=t;el.style.display='block';setTimeout(()=>el.style.display='none',1600)}
+render();
+</script>
+</body></html>
